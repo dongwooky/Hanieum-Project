@@ -9,15 +9,19 @@ def getContours(img, imgContour):
         areaMin = cv2.getTrackbarPos("Area", "Parameters")
         if cv2.contourArea(contour) < areaMin:
             continue
-        cv2.drawContours(imgContour, contour, -1, (255, 0, 255), 7)
+
         peri = cv2.arcLength(contour, True)
         approx = cv2.approxPolyDP(contour, 0.02 * peri, True)
-        print(len(approx))
+        if len(approx) != 4:
+                continue
+        cv2.drawContours(imgContour, contour, -1, (255, 0, 255), 7)
         x, y, w, h = cv2.boundingRect(approx)
+        center = approx.mean(axis=0)
+        center = np.array(center, dtype=np.int16).flatten().tolist()
+        print(center)
         cv2.rectangle(imgContour, (x, y), (x + w, y + h), (0, 255, 0), 5)
-        cv2.putText(imgContour, "Points: " + str(len(approx)), (x + w + 20, y + 20), cv2.FONT_HERSHEY_COMPLEX, 0.7,
-                    (0, 255, 0), 2)
-        cv2.putText(imgContour, "Area: " + str(int(area)), (x + w + 20, y + 45), cv2.FONT_HERSHEY_COMPLEX, 0.7,
+#        cv2.putText(imgContour, "Points: " + str(len(approx)), (x + w + 20, y + 45), cv2.FONT_HERSHEY_COMPLEX, 0.7, (0, 255, 0), 2)
+        cv2.putText(imgContour, "Center: " + str(center), (x + w + 20, y + 20), cv2.FONT_HERSHEY_COMPLEX, 0.7,
                     (0, 255, 0), 2)
 
 def empty(a):
@@ -35,12 +39,12 @@ while True:
     ret, img = cap.read()
     imgContour = img.copy()
     
-    imgBlur = cv2.GaussianBlur(img, (0, 0), 1)
-    imgGray = cv2.cvtColor(imgBlur, cv2.COLOR_BGR2GRAY)
+    imgGray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    imgBlur = cv2.bilateralFilter(imgGray, -1, 10, 5)
     
     threshold1 = cv2.getTrackbarPos("Threshold1", "Parameters")
     threshold2 = cv2.getTrackbarPos("Threshold2", "Parameters")
-    imgCanny = cv2.Canny(imgGray, threshold1, threshold2)
+    imgCanny = cv2.Canny(imgBlur, threshold1, threshold2)
     kernel = np.ones((5, 5))
     imgDil = cv2.dilate(imgCanny, kernel, iterations=1)
     
